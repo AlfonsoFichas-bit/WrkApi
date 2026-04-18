@@ -1,6 +1,10 @@
 import { db } from "../db/index";
 
-export const checkProjectOverlap = async (start: Date, end: Date, excludeId?: string) => {
+export const checkProjectOverlap = async (
+	start: Date,
+	end: Date,
+	excludeId?: string,
+) => {
 	const overlapping = await db.project.findFirst({
 		where: {
 			AND: [
