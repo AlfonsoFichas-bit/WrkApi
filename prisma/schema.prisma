@@ -1,0 +1,52 @@
+generator client {
+  provider        = "prisma-client"
+  output        = "./generated"
+  engineType   = "client"
+  runtime      = "bun"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  globalRole   String        @default("USER") // "ADMIN" or "USER"
+  createdAt    DateTime      @default(now())
+  projects     UserProject[]
+}
+
+model Project {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime      @default(now())
+  members     UserProject[]
+  stories     UserStory[]
+}
+
+model UserProject {
+  userId    String
+  projectId String
+  role      String   // "Scrum Master", "Product Owner", "Team Developer"
+  joinedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([userId, projectId])
+}
+
+model UserStory {
+  id                String   @id @default(uuid())
+  projectId         String
+  description       String
+  acceptanceCriteria String
+  priority          Int      @default(0)
+  createdAt         DateTime @default(now())
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}

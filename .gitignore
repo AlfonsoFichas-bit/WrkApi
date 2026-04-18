@@ -1,0 +1,14 @@
+# deps
+node_modules/
+
+# Folders
+.idea/
+.vscode/
+
+.agent/
+.gemini/
+.opencode/
+openspec/
+/src/generated/prisma
+prisma/generated/
+coverage/
