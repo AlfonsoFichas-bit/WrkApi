@@ -12,3 +12,21 @@ openspec/
 /src/generated/prisma
 prisma/generated/
 coverage/
+
+# Security
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+bun-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build/Dist
+dist/
+build/
+out/
