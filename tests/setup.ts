@@ -13,7 +13,8 @@ vi.mock("hono/jwt", () => ({
 		if (token.includes("invalid")) {
 			throw new Error("Invalid token");
 		}
-		return { id: "test-user-id", globalRole: "ADMIN" };
+		const role = token.includes("admin") ? "ADMIN" : "USER";
+		return { id: "test-user-id", globalRole: role };
 	}),
 	sign: vi.fn().mockResolvedValue("mocked-token"),
 }));

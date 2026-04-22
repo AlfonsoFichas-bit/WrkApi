@@ -9,9 +9,14 @@ export const request = async (
 		body?: any;
 	} = {},
 ) => {
+	const headers = { ...options.headers };
+	if (options.body && !headers["Content-Type"]) {
+		headers["Content-Type"] = "application/json";
+	}
+
 	const res = await app.request(path, {
 		method: options.method || "GET",
-		headers: options.headers,
+		headers: headers,
 		body: options.body ? JSON.stringify(options.body) : undefined,
 	});
 

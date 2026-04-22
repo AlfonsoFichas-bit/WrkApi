@@ -18,7 +18,8 @@ describe("Integration Tests: POST Endpoints", () => {
 				body: { email: "test@example.com" },
 			});
 			expect(res.status).toBe(400);
-			expect(res.body.error).toBe("Missing email or password");
+			expect(res.body.success).toBe(false);
+			expect(Array.isArray(res.body.error)).toBe(true);
 		});
 
 		it("should return 401 if user not found", async () => {

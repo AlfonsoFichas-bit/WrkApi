@@ -1,15 +1,18 @@
 import { Hono } from "hono";
 import { db } from "../db/index";
 import { authMiddleware, requireAdmin } from "../middlewares/auth";
+import type { Env } from "../types";
 
-const projects = new Hono();
+const projects = new Hono<Env>();
 
-// All project routes require authentication
+// Todas las rutas de proyectos requieren autenticación
 projects.use("*", authMiddleware);
 
-// --- Admin Only Routes ---
+// --- Rutas solo para Administradores ---
 
-// Create Project
+// --- Rutas solo para Administradores ---
+
+// Crear proyecto
 projects.post("/", requireAdmin, async (c) => {
 	const body = await c.req.json().catch(() => null);
 	if (!body?.name || !body?.description || !body?.startDate || !body?.endDate) {
@@ -44,7 +47,7 @@ projects.post("/", requireAdmin, async (c) => {
 			},
 		});
 		return c.json(project, 201);
-	} catch (err) {
+	} catch (err: any) {
 		if (err.code === "P2002") {
 			return c.json({ error: "Project name must be unique" }, 409);
 		}
@@ -52,11 +55,12 @@ projects.post("/", requireAdmin, async (c) => {
 	}
 });
 
-// List Projects
-// (Admins see all, we could restrict regular users to their projects, but Iteration 1 says admin manages projects)
+// Listar proyectos
+// (Los administradores ven todos, podríamos restringir a los usuarios regulares a sus proyectos, pero la Iteración 1 dice que el administrador gestiona los proyectos)
 projects.get("/", async (c) => {
 	const user = c.get("user");
 
+	// Los administradores ven todos los proyectos, los usuarios regulares solo ven los proyectos en los que están asignados
 	const projectList =
 		user.globalRole === "ADMIN"
 			? await db.project.findMany()
@@ -73,13 +77,14 @@ projects.get("/", async (c) => {
 	return c.json(projectList);
 });
 
-// Update Project
+// Actualizar proyecto
 projects.put("/:id", requireAdmin, async (c) => {
 	const id = c.req.param("id");
 	const body = await c.req.json().catch(() => null);
 	if (!body) return c.json({ error: "Invalid body" }, 400);
 
 	try {
+		// Preparar los datos a actualizar
 		const updateData: Partial<{
 			name: string;
 			description: string;
@@ -101,10 +106,11 @@ projects.put("/:id", requireAdmin, async (c) => {
 	}
 });
 
-// Delete Project
+// Eliminar proyecto
 projects.delete("/:id", requireAdmin, async (c) => {
 	const id = c.req.param("id");
 	try {
+		// Eliminar el proyecto de la base de datos
 		await db.project.delete({ where: { id } });
 		return c.json({ success: true });
 	} catch (_err) {
@@ -112,21 +118,23 @@ projects.delete("/:id", requireAdmin, async (c) => {
 	}
 });
 
-// Assign Member to Project
+// Asignar miembro al proyecto
 projects.post("/:id/members", requireAdmin, async (c) => {
-	const projectId = c.req.param("id");
+	const projectId = c.req.param("id") as string;
 	const body = await c.req.json().catch(() => null);
 
 	if (!body?.userId || !body?.role) {
 		return c.json({ error: "Missing userId or role" }, 400);
 	}
 
+	// Validar roles permitidos
 	const validRoles = ["Scrum Master", "Product Owner", "Team Developer"];
 	if (!validRoles.includes(body.role)) {
 		return c.json({ error: "Invalid project role" }, 400);
 	}
 
 	try {
+		// Asignar usuario al proyecto o actualizar su rol si ya está asignado
 		const userProject = await db.userProject.upsert({
 			where: {
 				userId_projectId: {
@@ -138,13 +146,13 @@ projects.post("/:id/members", requireAdmin, async (c) => {
 				role: body.role,
 			},
 			create: {
-				userId: body.userId,
-				projectId: projectId,
+				user: { connect: { id: body.userId } },
+				project: { connect: { id: projectId } },
 				role: body.role,
 			},
 		});
 
-		// Mock Email Notification
+		// Simular notificación por correo electrónico
 		console.log(
 			`[Mock Email] Assigned user ${body.userId} to project ${projectId} as ${body.role}`,
 		);

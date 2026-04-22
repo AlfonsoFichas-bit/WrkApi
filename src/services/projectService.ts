@@ -1,3 +1,4 @@
+// Servicio para verificar si hay proyectos con fechas superpuestas
 import { db } from "../db/index";
 
 export const checkProjectOverlap = async (

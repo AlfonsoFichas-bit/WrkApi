@@ -1,9 +1,11 @@
-import type { Context, Next } from "hono";
+import type { Next } from "hono";
 import { verify } from "hono/jwt";
+import type { Context } from "hono";
+import type { Env, UserPayload } from "../types";
 
 const JWT_SECRET = process.env.JWT_SECRET || "iteracion1_secret";
 
-export const authMiddleware = async (c: Context, next: Next) => {
+export const authMiddleware = async (c: Context<Env>, next: Next) => {
 	const authHeader = c.req.header("Authorization");
 
 	if (!authHeader?.startsWith("Bearer ")) {
@@ -13,7 +15,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
 	const token = authHeader.split(" ")[1];
 
 	try {
-		const payload = await verify(token, JWT_SECRET);
+		const payload = (await verify(token, JWT_SECRET, "HS256")) as any as UserPayload;
 		c.set("user", payload);
 		await next();
 	} catch (_error) {
@@ -21,7 +23,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
 	}
 };
 
-export const requireAdmin = async (c: Context, next: Next) => {
+export const requireAdmin = async (c: Context<Env>, next: Next) => {
 	const user = c.get("user");
 
 	if (!user || user.globalRole !== "ADMIN") {
@@ -32,7 +34,7 @@ export const requireAdmin = async (c: Context, next: Next) => {
 };
 
 export const requireProjectRole = (allowedRoles: string[]) => {
-	return async (c: Context, next: Next) => {
+	return async (c: Context<Env>, next: Next) => {
 		const user = c.get("user");
 		const projectId = c.req.param("projectId") || c.req.param("id");
 
@@ -40,7 +42,7 @@ export const requireProjectRole = (allowedRoles: string[]) => {
 			return c.json({ error: "Unauthorized" }, 401);
 		}
 
-		// Global Admins bypass project role checks
+		// Los administradores globales omiten las verificaciones de roles de proyecto
 		if (user.globalRole === "ADMIN") {
 			await next();
 			return;
@@ -50,7 +52,7 @@ export const requireProjectRole = (allowedRoles: string[]) => {
 			return c.json({ error: "Bad Request: Missing project ID" }, 400);
 		}
 
-		// Dynamic import to avoid circular dependency
+		// Importación dinámica para evitar dependencia circular
 		const { db } = await import("../db/index");
 
 		const userProject = await db.userProject.findUnique({

@@ -1,3 +1,4 @@
+// Configuración de Vitest para pruebas unitarias e integrales
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
